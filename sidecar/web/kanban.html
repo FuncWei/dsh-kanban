@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kanban — dsh-kanban</title>
+  <link rel="stylesheet" href="/kanban/vendor/hermes-base.css" />
   <link rel="stylesheet" href="/kanban/dist/style.css" />
   <style>
     /* Host page scaffolding only; the board styles come from dist/style.css. */
@@ -183,6 +184,209 @@
       }
 
       /* --- plugin SDK + registry ----------------------------------------- */
+      /* Chinese dictionary for the board UI (keys match the bundle's tx()
+         dotted paths under the kanban namespace). */
+      var ZH = {
+        active: "进行中",
+        addChild: "— 添加子任务 —",
+        addComment: "添加评论…（回车提交）",
+        addParent: "— 添加父任务 —",
+        allProfiles: "全部档案",
+        allTenants: "全部租户",
+        apply: "应用",
+        archive: "归档",
+        archiveBoardConfirm: "确定归档此看板？",
+        archiveBoardTitle: "归档此看板",
+        assignee: "负责人",
+        assigneeLabel: "负责人",
+        assigneeLabelHint: "（留空 = 派发器自动指派）",
+        assigneePlaceholder: "负责人",
+        block: "阻塞",
+        board: "看板",
+        boardSettings: "设置",
+        boardSettingsTitle: "看板设置",
+        boardSettingsTitleFor: "看板设置",
+        boardSwitcherHint: "看板用于分隔互不相关的工作流",
+        bulkFailed: "批量：",
+        cancel: "取消",
+        children: "子任务：",
+        clear: "清空",
+        clearFilters: "清除筛选",
+        clickToEdit: "点击编辑",
+        clickToEditAssignee: "点击编辑负责人",
+        clickToEditModel: "点击编辑模型",
+        close: "关闭（Esc）",
+        columnLabels: {
+          triage: "待梳理",
+          todo: "待办",
+          scheduled: "已排期",
+          ready: "就绪",
+          running: "进行中",
+          blocked: "阻塞",
+          review: "待评审",
+          done: "已完成",
+          archived: "已归档",
+        },
+        columnHelp: {
+          triage: "粗略想法 — AI 将细化规格",
+          todo: "等待依赖或指派",
+          scheduled: "按计划执行",
+          ready: "依赖就绪；指派档案即可派发",
+          running: "已被 worker 认领 — 执行中",
+          blocked: "worker 需要人工输入",
+          review: "实现完成 — 待评审",
+          done: "已完成",
+          archived: "已归档",
+        },
+        comment: "评论",
+        commentHint: "给协作者留言",
+        commentHintTitle: "评论",
+        complete: "完成",
+        completionSummary: "完成摘要",
+        completionSummaryRequired: "完成需填写摘要",
+        copied: "已复制",
+        copyCommand: "复制命令到剪贴板",
+        create: "创建",
+        createBoard: "创建看板",
+        createTask: "在此列创建任务",
+        creating: "创建中…",
+        delete: "删除",
+        dependencies: "依赖",
+        description: "描述",
+        descriptionHint: "（可选）",
+        diagnostic: "诊断",
+        diagnostics: "诊断",
+        displayName: "显示名称",
+        displayNameHint: "（可选）",
+        edit: "编辑",
+        emptyAssignee: "（空 = 取消指派）",
+        ended: "已结束",
+        filterCards: "筛选卡片…",
+        goalMaxTurns: "最大轮数（默认 20）",
+        goalMode: "目标模式",
+        hide: "隐藏",
+        icon: "图标",
+        iconHint: "（单个字符或表情）",
+        lanesByProfile: "按档案分泳道",
+        loadFailed: "加载看板失败：",
+        loadFailedHint: "请稍后重试",
+        loading: "正在加载看板…",
+        loadingDetail: "加载中…",
+        loadingLog: "正在加载日志…",
+        logAt: ")",
+        logTruncated: "（仅显示最近 100 KB — 完整日志在 ",
+        markArchived: "标记已归档？",
+        markDone: "标记完成？",
+        model: "模型",
+        modelFreeTextPlaceholder: "模型名（留空 = 档案默认）",
+        modelLoading: "正在加载模型…",
+        modelProfileDefault: "档案默认",
+        modelProfileDefaultOption: "（档案默认）",
+        moveFailed: "移动失败：",
+        newBoard: "+ 新建看板",
+        newBoardDescription: "新看板描述",
+        newBoardTitle: "新建看板",
+        newTaskTitle: "新任务标题…",
+        noDescription: "— 无描述 —",
+        noParent: "— 无父任务 —",
+        noProfile: "（无档案）",
+        noTasks: "— 无任务 —",
+        noWorkerLog: "无 worker 日志",
+        none: "无",
+        notifyHomeChannels: "通知首页频道",
+        nudgeDispatcher: "催促派发器",
+        open: "打开",
+        parentLabel: "父任务",
+        parentLabelHint: "（子任务保持阻塞直到父任务完成）",
+        parents: "父任务：",
+        pickProfileFirst: "请先选择档案。",
+        priority: "优先级",
+        projectDirectory: "项目目录",
+        projectDirectoryExplanation: "任务的工作目录",
+        projectDirectoryHelp: "项目目录帮助",
+        projectDirectoryHint: "（推荐）",
+        projectDirectoryOverrideHint: "覆盖提示",
+        projectDirectoryPlaceholder: "项目目录",
+        reassignFailed: "重新指派失败：",
+        reassignTo: "重新指派给：",
+        reassignedMessage: "已重新指派",
+        reclaimFailed: "认领失败：",
+        reclaimedMessage: "已认领",
+        refresh: "刷新",
+        reloadView: "重新加载视图",
+        removeDependency: "移除依赖",
+        renderingError: "看板渲染出错",
+        runHistory: "运行历史",
+        save: "保存",
+        saving: "保存中…",
+        search: "搜索",
+        selected: "已选",
+        sendNotifications: "完成 / 阻塞 / 放弃时通知",
+        sendingUpdates: "正在发送更新至",
+        setPriority: "设置优先级",
+        show: "显示",
+        showAllAttempts: "显示全部尝试",
+        showArchived: "显示已归档",
+        skillsLabel: "技能",
+        skillsLabelHint: "（可选，逗号分隔）",
+        slug: "标识",
+        slugHint: "— 小写连字符，如 atm10-server",
+        specifier: "细化器",
+        switchAfterCreate: "创建后切换到该看板",
+        taskCreatedWarning: "任务已创建，但：",
+        taskNeedsAttention: "1 个任务需要关注",
+        taskTitleLabel: "标题",
+        taskTitlePlaceholder: "新任务标题…",
+        tasksNeedAttention: "个任务需要关注",
+        tenant: "租户",
+        trash: {
+          confirm: "删除此任务？",
+          confirmMany: "删除所选任务？",
+          dropHint: "拖到此处删除",
+        },
+        triagePlaceholder: "粗略想法 — AI 将细化…",
+        unassigned: "未指派",
+        unblock: "解除阻塞",
+        unblockFailed: "解除阻塞失败：",
+        unblockedMessage: "已解除阻塞",
+        untitled: "（无标题）",
+        workerLog: "Worker 日志",
+        workspace: "工作区",
+        workspaceDir: "目录 — 保留",
+        workspacePathDir: "工作区路径（无看板工作目录时必填）",
+        workspacePathOptional: "工作区路径（可选）",
+        workspaceScratch: "临时 — 完成后删除",
+        workspaceScratchWarning: "临时工作区完成后将被删除",
+        workspaceWorktree: "工作树",
+        wsAuthFailed: "WebSocket 认证失败",
+      };
+
+      /* Hardcoded English strings the bundle renders outside tx() (column
+         names, column help, header bits). Replaced on the rendered DOM. */
+      var ZH_PLAIN = {
+        "Triage": "待梳理", "Todo": "待办", "scheduled": "已排期",
+        "Ready": "就绪", "In Progress": "进行中", "Blocked": "阻塞",
+        "Review": "待评审", "Done": "已完成", "Completed": "已完成",
+        "Raw ideas — a specifier will flesh out the spec": "粗略想法 — AI 将细化规格",
+        "Waiting on dependencies or unassigned": "等待依赖或指派",
+        "Dependencies satisfied; assign a profile to dispatch": "依赖就绪，指派档案即可派发",
+        "Claimed by a worker — in-flight": "已被 worker 认领 — 执行中",
+        "Worker asked for human input": "需要人工输入",
+        "Implementation complete — awaiting review": "实现完成 — 待评审",
+        "Switch kanban board": "切换看板",
+        "Hermes Kanban documentation": "看板文档",
+      };
+
+      function zhReplace(root) {
+        var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+        var n;
+        while ((n = walker.nextNode())) {
+          if (!n.nodeValue) continue;
+          var v = ZH_PLAIN[n.nodeValue.trim()];
+          if (v !== undefined) n.nodeValue = v;
+        }
+      }
+
       window.__HERMES_PLUGIN_SDK__ = {
         React: React,
         hooks: {
@@ -192,17 +396,24 @@
           useMemo: React.useMemo,
           useRef: React.useRef
         },
+        useI18n: function () {
+          return { t: { kanban: ZH }, locale: "zh" };
+        },
         components: components,
         utils: { cn: cn, timeAgo: timeAgo },
         fetchJSON: fetchJSON,
         authedFetch: authedFetch,
         buildWsUrl: buildWsUrl
-        /* useI18n omitted on purpose: the bundle falls back to English
-           strings when the hook is absent. */
       };
       window.__HERMES_PLUGINS__ = {
         register: function (name, Component) {
-          ReactDOM.createRoot(document.getElementById("root")).render(h(Component));
+          var rootEl = document.getElementById("root");
+          ReactDOM.createRoot(rootEl).render(h(Component));
+          var mo = new MutationObserver(function () {
+            zhReplace(rootEl);
+          });
+          mo.observe(rootEl, { childList: true, subtree: true });
+          zhReplace(rootEl);
         }
       };
     })();

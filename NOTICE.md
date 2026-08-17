@@ -20,6 +20,8 @@ Agent repository (paths relative to the Hermes Agent repo root):
 | `sidecar/plugin_api.py` | `plugins/kanban/dashboard/plugin_api.py` | copied (WS auth helper relies on the upstream fallback path) |
 | `sidecar/web/dist/index.js` | `plugins/kanban/dashboard/dist/index.js` | copied (board UI) |
 | `sidecar/web/dist/style.css` | `plugins/kanban/dashboard/dist/style.css` | copied |
+| `sidecar/web/vendor/hermes-base.css` | `hermes_cli/web_dist/assets/index-*.css` | copied (full-site build CSS that supplies the Tailwind utility classes the board bundle expects) |
+| `sidecar/hermes_cli/projects_db.py` | `hermes_cli/projects_db.py` | copied (first-class project registry, used by `/projects`) |
 
 Compat shims written by the dsh-kanban project (small, self-contained,
 documented in each file): `sidecar/hermes_cli/{hermes_state,profiles,config}.py`,
