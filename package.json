@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "test": "node --test tests/sidecar.test.mjs"
+    "test": "node --test tests/sidecar.test.mjs tests/dispatch.test.mjs"
   },
   "exports": {
     ".": "./src/index.js",
