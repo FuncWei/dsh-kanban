@@ -147,6 +147,8 @@ class SidecarManager {
     })
     this.child.on('exit', () => {
       this.child = null
+      // Allow a later request to respawn the sidecar (crash recovery).
+      this.ready = null
     })
     await this.waitHealthy()
   }
