@@ -17,9 +17,7 @@ DeepSeek Harness 原生多智能体任务看板插件。**完整复用 Hermes（
 ## 安装
 
 ```sh
-dsh plugin --profile <name> add @funcwei/dsh-kanban
-# 或 GitHub 源：
-# dsh plugin --profile <name> add github:FuncWei/dsh-kanban
+dsh plugin --profile <name> add github:FuncWei/dsh-kanban
 ```
 
 首次使用时插件会自动启动 sidecar（自动用 `uv` 拉取 Python 依赖；无 uv 时回退到 `python3 -m venv`）。然后**重启 `dsh web`**，浏览器打开：

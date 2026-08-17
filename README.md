@@ -23,9 +23,7 @@ workers.
 ## Install
 
 ```sh
-dsh plugin --profile <name> add @funcwei/dsh-kanban
-# or from GitHub:
-# dsh plugin --profile <name> add github:FuncWei/dsh-kanban
+dsh plugin --profile <name> add github:FuncWei/dsh-kanban
 ```
 
 The sidecar auto-boots on first use (`uv` preferred; falls back to
