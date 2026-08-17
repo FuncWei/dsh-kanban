@@ -1,0 +1,7 @@
+# Sidecar dependencies — resolved by `uv run --with ...` on first boot.
+# Bump freely; these are the versions the sidecar was developed against.
+fastapi==0.141.1
+uvicorn==0.52.3
+pydantic==2.13.4
+python-multipart==0.0.20
+websockets==17.0.1

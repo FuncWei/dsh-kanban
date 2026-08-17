@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kanban — dsh-kanban</title>
+  <link rel="stylesheet" href="/kanban/dist/style.css" />
+  <style>
+    /* Host page scaffolding only; the board styles come from dist/style.css. */
+    html, body { margin: 0; padding: 0; height: 100%; background: var(--ui-bg, #0f1115); }
+    #root { height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    window.__HERMES_SESSION_TOKEN__ = "__DSH_KANBAN_TOKEN__";
+  </script>
+  <script src="/kanban/vendor/react.production.min.js"></script>
+  <script src="/kanban/vendor/react-dom.production.min.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var React = window.React;
+      var ReactDOM = window.ReactDOM;
+      var h = React.createElement;
+      var TOKEN = window.__HERMES_SESSION_TOKEN__ || "";
+
+      /* --- utils --------------------------------------------------------- */
+      function cn() {
+        var out = [];
+        for (var i = 0; i < arguments.length; i++) {
+          var a = arguments[i];
+          if (!a) continue;
+          if (typeof a === "string") out.push(a);
+          else if (Array.isArray(a)) out.push(cn.apply(null, a));
+          else if (typeof a === "object") {
+            for (var k in a) if (a[k]) out.push(k);
+          }
+        }
+        return out.join(" ");
+      }
+      function timeAgo(ts) {
+        if (!ts) return "";
+        var now = Date.now();
+        var diff = Math.max(0, now - Number(ts));
+        var s = Math.floor(diff / 1000);
+        if (s < 60) return s + "s";
+        var m = Math.floor(s / 60);
+        if (m < 60) return m + "m";
+        var hr = Math.floor(m / 60);
+        if (hr < 24) return hr + "h";
+        var d = Math.floor(hr / 24);
+        return d + "d";
+      }
+
+      /* --- components (thin shadcn-style shims the dist bundle expects) --- */
+      function pass(tag, base) {
+        return function (props) {
+          var p = Object.assign({}, props);
+          var cls = cn(base, props && props.className);
+          p.className = cls;
+          if (tag === "button") p.type = p.type || "button";
+          return h(tag, p);
+        };
+      }
+      var components = {
+        Card: pass("div", ""),
+        CardContent: pass("div", ""),
+        Badge: pass("span", ""),
+        Button: pass("button", ""),
+        Input: pass("input", ""),
+        Label: pass("label", ""),
+        Select: pass("select", ""),
+        SelectOption: function (props) {
+          var p = Object.assign({}, props);
+          var v = p.value; delete p.value;
+          return h("option", Object.assign({ value: v }, p));
+        }
+        /* Checkbox intentionally absent: the bundle ships its own native
+           fallback when SDK.components.Checkbox is missing. */
+      };
+
+      /* --- network -------------------------------------------------------- */
+      function authHeaders(extra) {
+        var headers = Object.assign({}, extra);
+        if (TOKEN) headers["Authorization"] = "Bearer " + TOKEN;
+        return headers;
+      }
+      function fetchJSON(url, opts) {
+        opts = opts || {};
+        var headers = authHeaders(opts.headers || {});
+        var body = opts.body;
+        if (typeof body === "string" && !headers["content-type"]) {
+          headers["content-type"] = "application/json";
+        }
+        return fetch(url, Object.assign({}, opts, { headers: headers })).then(function (r) {
+          var p = r.json().catch(function () { return null; });
+          if (!r.ok) {
+            return p.then(function (e) {
+              var detail = e && (e.detail || e.error) ? (e.detail || e.error) : "HTTP " + r.status;
+              throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+            });
+          }
+          return p;
+        });
+      }
+      function authedFetch(url, opts) {
+        opts = opts || {};
+        return fetch(url, Object.assign({}, opts, { headers: authHeaders(opts.headers || {}) }));
+      }
+      function buildWsUrl(path, params) {
+        return Promise.resolve().then(function () {
+          var u = new URL(path, window.location.origin);
+          u.protocol = u.protocol === "https:" ? "wss:" : "ws:";
+          if (TOKEN) u.searchParams.set("token", TOKEN);
+          if (params) for (var k in params) u.searchParams.set(k, String(params[k]));
+          return u.toString();
+        });
+      }
+
+      /* --- plugin SDK + registry ----------------------------------------- */
+      window.__HERMES_PLUGIN_SDK__ = {
+        React: React,
+        hooks: {
+          useState: React.useState,
+          useEffect: React.useEffect,
+          useCallback: React.useCallback,
+          useMemo: React.useMemo,
+          useRef: React.useRef
+        },
+        components: components,
+        utils: { cn: cn, timeAgo: timeAgo },
+        fetchJSON: fetchJSON,
+        authedFetch: authedFetch,
+        buildWsUrl: buildWsUrl
+        /* useI18n omitted on purpose: the bundle falls back to English
+           strings when the hook is absent. */
+      };
+      window.__HERMES_PLUGINS__ = {
+        register: function (name, Component) {
+          ReactDOM.createRoot(document.getElementById("root")).render(h(Component));
+        }
+      };
+    })();
+  </script>
+  <script src="/kanban/dist/index.js"></script>
+</body>
+</html>
