@@ -87,11 +87,23 @@ def get_profile_dir(name: str) -> Path:
 
 
 def profile_exists(name: str) -> bool:
-    """Check whether a profile directory exists (default always exists)."""
+    """Whether *name* names a spawnable assignee.
+
+    The upstream Hermes engine uses this to refuse to auto-spawn tasks
+    whose assignee is not a real Hermes profile (its worker is
+    ``hermes -p <assignee>``). In the DSH sidecar the worker command is
+    fixed (``dsh --profile headless``) and the assignee is a routing
+    label, not a host profile — so any well-formed name is spawnable.
+    ``default`` always exists by construction.
+    """
     canon = normalize_profile_name(name)
     if canon == "default":
         return True
-    return get_profile_dir(canon).is_dir()
+    try:
+        validate_profile_name(canon)
+    except ValueError:
+        return False
+    return True
 
 
 def resolve_profile_env(profile_name: str) -> str:

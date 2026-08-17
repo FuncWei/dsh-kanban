@@ -329,6 +329,7 @@
         showArchived: "显示已归档",
         skillsLabel: "技能",
         skillsLabelHint: "（可选，逗号分隔）",
+        skillsPlaceholder: "技能列表",
         slug: "标识",
         slugHint: "— 小写连字符，如 atm10-server",
         specifier: "细化器",
@@ -362,7 +363,10 @@
       };
 
       /* Hardcoded English strings the bundle renders outside tx() (column
-         names, column help, header bits). Replaced on the rendered DOM. */
+         names, column help, header bits). Replaced on the rendered DOM.
+         ONLY UI scaffolding text is swapped — anything inside the content
+         areas (task titles, bodies, comments, editable fields) is left
+         untouched so user data can never be mistranslated. */
       var ZH_PLAIN = {
         "Triage": "待梳理", "Todo": "待办", "scheduled": "已排期",
         "Ready": "就绪", "In Progress": "进行中", "Blocked": "阻塞",
@@ -375,15 +379,85 @@
         "Implementation complete — awaiting review": "实现完成 — 待评审",
         "Switch kanban board": "切换看板",
         "Hermes Kanban documentation": "看板文档",
+        "Orchestration settings": "编排设置",
+        "Orchestration:": "编排：",
+        "Orchestration: Auto": "编排：自动",
+        "▸ Orchestration settings": "▸ 编排设置",
+        "▾ Orchestration settings": "▾ 编排设置",
+        "Orchestrator profile": "编排器档案",
+        "Default assignee": "默认负责人",
+        "Orchestration mode": "编排模式",
+        "Auto-decompose triage tasks": "自动分解待梳理任务",
+        "The dispatcher decomposes new triage tasks automatically.": "派发器自动分解新的待梳理任务。",
+        "Profile descriptions": "档案描述",
+        "Descriptions guide the decomposer's routing. Click ⚗ to auto-generate, or edit and save.": "描述引导分解器的路由。点击 ⚗ 自动生成，或编辑后保存。",
+        "Reload": "重新加载",
+        "⚗ Auto": "⚗ 自动",
+        "Owns the root task after fan-out (wakes back up to judge completion). Does not drive how tasks split — configure the decomposer model under auxiliary.kanban_decomposer.": "在任务拆分后拥有根任务（唤醒回来判断完成）。不决定任务如何拆分——分解模型请在 auxiliary.kanban_decomposer 下配置。",
+        "Resolved: ": "解析为：",
+        "(default: default)": "（默认：default）",
+        "default (default)": "default（默认）",
+        "(default)": "（默认）",
+        "no description": "无描述",
+        "⚠ no description": "⚠ 无描述",
+        "Save": "保存",
+        "Orchestration: Auto — the dispatcher decomposes new triage tasks automatically every tick. Click to switch to Manual (pre-PR behavior).": "编排：自动 — 派发器每轮自动分解新的待梳理任务。点击切换为手动（PR 前行为）。",
+        "Orchestration: Manual — triage tasks stay in triage until you click ⚗ Decompose on each card. Click to switch to Auto.": "编排：手动 — 任务保留在待梳理列，直到你点击卡片上的 ⚗ 分解。点击切换为自动。",
+        "Auto": "自动",
+        "No worker log yet.": "暂无 worker 日志。",
+        "Status": "状态",
+        "Created by": "创建者",
+        "Run history": "运行历史",
+        "Copy command to clipboard": "复制命令到剪贴板",
+        "Needs assignee": "需要指派负责人",
+        "+ parent": "+ 父任务",
+        "+ child": "+ 子任务",
+        "Upload file": "上传文件",
+        "— no attachments —": "— 无附件 —",
+        "— no comments —": "— 无评论 —",
+        "Create task in this column": "在此列创建任务",
       };
+
+      /* Content subtrees that must never be translated (user-authored).
+         Only the actual content leaves are guarded — card-title/card-body
+         (task text), comments, editable fields, descriptions, raw event
+         payloads. Containers like card-content / card-row / card-meta are
+         NOT guarded, because they also wrap UI hints (e.g. the "needs
+         assignee" attention bar) that must be translated. */
+      function isContentNode(node) {
+        for (var el = node.parentElement; el && el !== document.body; el = el.parentElement) {
+          var cls = el.className || "";
+          if (typeof cls === "string") {
+            if (cls.indexOf("card-title") >= 0 || cls.indexOf("card-body") >= 0 ||
+                cls.indexOf("comment") >= 0 ||
+                cls.indexOf("editable") >= 0 || cls.indexOf("event-payload") >= 0 ||
+                cls.indexOf("description") >= 0) return true;
+          }
+          if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" ||
+              el.contentEditable === "true") return true;
+        }
+        return false;
+      }
 
       function zhReplace(root) {
         var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
         var n;
         while ((n = walker.nextNode())) {
-          if (!n.nodeValue) continue;
-          var v = ZH_PLAIN[n.nodeValue.trim()];
-          if (v !== undefined) n.nodeValue = v;
+          if (!n.nodeValue || isContentNode(n)) continue;
+          var t = n.nodeValue.trim();
+          var v = ZH_PLAIN[t];
+          if (v !== undefined) { n.nodeValue = v; continue; }
+          var m = /^(\d+)\s+tasks?$/.exec(t);
+          if (m) { n.nodeValue = m[1] + " 个任务"; continue; }
+          var m2 = /^(Attachments|Comments|Events) \((\d+)\)$/.exec(t);
+          if (m2) {
+            var label = m2[1] === "Attachments" ? "附件" : m2[1] === "Comments" ? "评论" : "动态";
+            n.nodeValue = label + " (" + m2[2] + ")";
+            continue;
+          }
+          if (t.indexOf("Resolved: ") === 0) {
+            n.nodeValue = "解析为：" + t.slice("Resolved: ".length);
+          }
         }
       }
 
