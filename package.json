@@ -1,0 +1,50 @@
+{
+  "name": "dsh-kanban",
+  "version": "0.1.0",
+  "description": "DSH-native multi-agent kanban board: the Hermes (MIT) kanban engine + board UI, driven by a DSH headless-worker dispatcher, with model tools for card management",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./client": "./client/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src/",
+    "client/",
+    "sidecar/",
+    "cordis.patch.yml",
+    "NOTICE.md",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "kanban",
+    "task-board",
+    "multi-agent"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FuncWei/dsh-kanban"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-primitives"
+      ]
+    }
+  }
+}
