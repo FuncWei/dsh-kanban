@@ -4,6 +4,9 @@
   "description": "DSH-native multi-agent kanban board: the Hermes (MIT) kanban engine + board UI, driven by a DSH headless-worker dispatcher, with model tools for card management",
   "type": "module",
   "main": "src/index.js",
+  "scripts": {
+    "test": "node --test tests/sidecar.test.mjs"
+  },
   "exports": {
     ".": "./src/index.js",
     "./client": "./client/client.js",
