@@ -7,9 +7,72 @@
   <link rel="stylesheet" href="/kanban/dist/style.css" />
   <style>
     /* Host page scaffolding only; the board styles come from dist/style.css. */
-    html, body { margin: 0; padding: 0; height: 100%; background: var(--ui-bg, #0f1115); }
+    html, body { margin: 0; padding: 0; height: 100%; }
     #root { height: 100%; }
   </style>
+  <script>
+    /* Theme tokens: the Hermes board styles reference CSS vars like
+       --color-foreground / --color-card / --color-border that the Hermes
+       web shell normally defines. This standalone page must define them
+       itself, matching the DSH host's light/dark scheme. The host marks
+       its scheme with inline `color-scheme` on <html> (same origin, so we
+       can read it directly); we fall back to the OS preference. */
+    (function () {
+      var dark = false;
+      try {
+        var p = window.parent;
+        if (p && p.document && p.document.documentElement) {
+          var host = p.document.documentElement;
+          var cs = host.style.colorScheme || getComputedStyle(host).colorScheme;
+          dark = cs === "dark";
+        }
+      } catch (e) {
+        /* cross-origin guard — fall back to OS preference */
+      }
+      if (!dark && window.matchMedia) {
+        try { dark = window.matchMedia("(prefers-color-scheme: dark)").matches; } catch (e) {}
+      }
+      var root = document.documentElement;
+      root.setAttribute("data-kb-theme", dark ? "dark" : "light");
+      var vars = dark
+        ? [
+            "color-scheme: dark",
+            "--color-foreground:#e4e6e9",
+            "--color-muted-foreground:#9aa1a9",
+            "--color-card:#171b20",
+            "--color-card-foreground:#e4e6e9",
+            "--color-border:rgba(255,255,255,0.14)",
+            "--color-input:rgba(255,255,255,0.14)",
+            "--color-ring:#4cc2ff",
+            "--hermes-diag-critical:#fb2c36",
+            "--hermes-diag-error:#fb2c36",
+            "--hermes-diag-warning:#ffbd38",
+            "--radius:10px",
+            "--ui-bg:#0f1115",
+          ]
+        : [
+            "color-scheme: light",
+            "--color-foreground:#1c1f24",
+            "--color-muted-foreground:#5c6470",
+            "--color-card:#ffffff",
+            "--color-card-foreground:#1c1f24",
+            "--color-border:rgba(0,0,0,0.12)",
+            "--color-input:rgba(0,0,0,0.12)",
+            "--color-ring:#0a7cff",
+            "--hermes-diag-critical:#d92d20",
+            "--hermes-diag-error:#d92d20",
+            "--hermes-diag-warning:#b54708",
+            "--radius:10px",
+            "--ui-bg:#f6f7f9",
+          ];
+      var style = document.createElement("style");
+      style.textContent =
+        ":root{" + vars.join(";") + "}" +
+        "html,body{background:var(--ui-bg,#0f1115)}" +
+        "body{color:var(--color-foreground)}";
+      document.head.appendChild(style);
+    })();
+  </script>
 </head>
 <body>
   <div id="root"></div>
