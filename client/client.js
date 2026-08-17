@@ -1,16 +1,19 @@
 /**
  * dsh-kanban — browser half.
  *
- * Hand-written `__ModuleLoader__` bundle (no build step). Clicking the entry
+ * Hand-written `__ModuleLoader__` bundle (no build step). Clicking an entry
  * flips the CURRENT window into a full-screen board overlay (iframe of
  * /kanban) — no new browser tab, no route change. The close button (top-right)
  * or the entry itself toggles back to the conversation.
  *
- * Entry point: `conversation.session.header.actions` — the session header's
- * action row, right beside the conversation title. (The `sidebar.footer.action`
- * seat is a row+nowrap flex list where other plugins can occupy the whole
- * width, squeezing an extra button out of the visible area — so the footer
- * seat is NOT used.)
+ * Entry points:
+ *   1. `sidebar.footer.action` — full-width row at the left column's foot
+ *      (`任务看板`). The framework's footerActions flex container is
+ *      row+nowrap and other plugins (usage-stats) occupy the whole first row,
+ *      so the plugin also injects `flex-wrap:wrap` on that container — the
+ *      entry wraps onto its own second row and stays visible.
+ *   2. `conversation.session.header.actions` — compact button in the session
+ *      header action row (visible once a conversation is open).
  *
  * The overlay mounts directly onto document.body (not via a host seat) so it
  * always sits on top of every other stacked layer.
@@ -28,6 +31,12 @@ window.__ModuleLoader__.load({
     let primitives = require('@deepseek-ai/dsh-client-ui-primitives')
 
     const css = [
+      /* allow the sidebar foot to wrap so our full-width entry gets its own row */
+      '[class$="_footerActions"]{flex-wrap:wrap;align-content:flex-start}',
+      '.kb_badge{width:100%;min-height:40px;color:var(--dsw-alias-label-primary);cursor:pointer;background:0 0;border:none;border-radius:12px;align-items:center;gap:8px;padding:0 8px 0 6px;font-family:inherit;font-size:14px;display:inline-flex;overflow:hidden}',
+      '.kb_badge:hover{background:var(--dsw-alias-interactive-bg-hover-solid)}',
+      '.kb_badge[data-active]{background:var(--dsw-alias-interactive-bg-hover)}',
+      '.kb_badgeLabel{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}',
       '.kb_headerBtn{height:28px;display:inline-flex;align-items:center;gap:5px;padding:0 9px;border-radius:7px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}',
       '.kb_headerBtn:hover{background:var(--dsw-alias-interactive-bg-hover-solid)}',
       '.kb_headerBtn[data-active]{background:var(--dsw-alias-accent-limpid);border-color:var(--dsw-alias-accent)}',
@@ -41,7 +50,7 @@ window.__ModuleLoader__.load({
 
     const NS = 'dsh-kanban'
 
-    /* --- open/close store shared by entry and overlay -------------------- */
+    /* --- open/close store shared by entries and overlay ------------------ */
     const store = { open: false, listeners: new Set() }
     function setOpen(value) {
       store.open = !!value
@@ -81,7 +90,22 @@ window.__ModuleLoader__.load({
       })
     }
 
-    /** Session header action: one compact board toggle button. */
+    /** Left-column foot entry: full-width row. */
+    function KanbanFooterButton() {
+      const open = useOpen()
+      return react_jsx_runtime.jsx('button', {
+        className: 'kb_badge',
+        'data-active': open || undefined,
+        title: '任务看板',
+        onClick: () => setOpen(!open),
+        children: [
+          react_jsx_runtime.jsx(primitives.IconDataOutline16, { size: 16 }),
+          react_jsx_runtime.jsx('span', { className: 'kb_badgeLabel', children: '任务看板' }),
+        ],
+      })
+    }
+
+    /** Session header action: compact toggle. */
     function KanbanHeaderButton() {
       const open = useOpen()
       return react_jsx_runtime.jsxs('button', {
@@ -110,6 +134,12 @@ window.__ModuleLoader__.load({
       react_dom.render(react_jsx_runtime.jsx(KanbanOverlay, {}), mount)
 
       const disposers = [
+        ctx.effect(() => ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
+          name: 'sidebar.footer.action',
+          id: 'dsh-kanban',
+          locale: NS,
+          order: 11,
+        }, KanbanFooterButton)), 'dsh-kanban: footer entry'),
         ctx.effect(() => ctx.slots.inject('conversation.session.header.actions', () => ctx.slots.register({
           name: 'conversation.session.header.actions',
           id: 'dsh-kanban',
@@ -127,6 +157,7 @@ window.__ModuleLoader__.load({
 
     exports.apply = apply
     exports.inject = inject
+    exports.KanbanFooterButton = KanbanFooterButton
     exports.KanbanHeaderButton = KanbanHeaderButton
     exports.KanbanOverlay = KanbanOverlay
     return module.exports
