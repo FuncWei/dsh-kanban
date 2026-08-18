@@ -7,13 +7,9 @@
   <link rel="stylesheet" href="/kanban/vendor/hermes-base.css" />
   <link rel="stylesheet" href="/kanban/dist/style.css" />
   <style>
-    /* Simplify the orchestration panel: the DSH board runs a single
-       default profile, so the per-profile pickers (orchestrator profile /
-       default assignee) and the profile-description editor are advanced
-       noise. Hide them; keep only the Auto/Manual mode switch plus the
-       one-line explainer injected by the script below. */
-    .hermes-kanban .grid.gap-3.sm\:grid-cols-3 > div:nth-child(1),
-    .hermes-kanban .grid.gap-3.sm\:grid-cols-3 > div:nth-child(2),
+    /* Orchestration UI is a single Auto/Manual switch — everything else in
+       the panel is hidden (single-default-profile DSH setup). */
+    .hermes-kanban .grid.gap-3.sm\:grid-cols-3,
     .hermes-kanban .border-t.pt-3 {
       display: none !important;
     }
@@ -519,34 +515,41 @@
         authedFetch: authedFetch,
         buildWsUrl: buildWsUrl
       };
-      /* Keep the orchestration panel minimal and self-explanatory: hide the
-         advanced per-profile editor and put a plain-language explainer
-         right under the header row. Idempotent — safe to run on every
-         sweep. */
+      /* Keep the orchestration UI to a single switch: hide the collapse
+         toggle (▸/▾ 编排设置), the reload button and the whole expandable
+         panel body — the DSH board runs a single default profile, so the
+         per-profile pickers / description editor are advanced noise. Only
+         the Auto/Manual mode pill stays, with a Chinese hover tooltip.
+         Idempotent — safe to run on every sweep. */
       function enhanceOrchestration(root) {
-        var zone = root.querySelector(".p-2.flex.flex-col.gap-3");
-        if (!zone) return;
-        var grid = zone.querySelector(".grid.gap-3");
-        if (grid && grid.children.length >= 3) {
-          grid.children[0].style.display = "none";
-          grid.children[1].style.display = "none";
-        }
-        var kids = Array.prototype.slice.call(zone.children);
-        for (var i = 0; i < kids.length; i++) {
-          var cls = kids[i].className || "";
-          if (cls.indexOf("border-t") >= 0) kids[i].style.display = "none";
-        }
-        if (!zone.querySelector(".kb-orch-explain")) {
-          var headerRow = zone.firstElementChild;
-          var p = document.createElement("p");
-          p.className = "kb-orch-explain text-xs text-muted-foreground mt-1";
-          p.textContent =
-            "编排开关：自动 = 新的「待梳理」任务由派发器自动分解并分派执行；" +
-            "手动 = 任务停留在待梳理，由你点击卡片上的 ⚗ 分解。";
-          if (headerRow) {
-            zone.insertBefore(p, headerRow.nextSibling);
-          } else {
-            zone.appendChild(p);
+        /* Cover both render shapes: expanded panel (.p-2 …) and collapsed
+           header row (.flex.items-center.gap-3.text-xs). */
+        var zones = root.querySelectorAll(
+          ".p-2.flex.flex-col.gap-3, .flex.items-center.gap-3.text-xs"
+        );
+        for (var z = 0; z < zones.length; z++) {
+          var zone = zones[z];
+          if (!zone) continue;
+          var btns = zone.querySelectorAll("button");
+          for (var i = 0; i < btns.length; i++) {
+            var t = (btns[i].textContent || "").trim();
+            if (t.indexOf("编排设置") >= 0 || /Orchestration settings/.test(t) ||
+                t === "重新加载" || t === "Reload") {
+              btns[i].style.display = "none";
+            } else if (t.indexOf("编排：") >= 0 || /Orchestration:/.test(t)) {
+              btns[i].title =
+                "编排开关：自动 = 派发器自动分解并派发新的「待梳理」任务；" +
+                "手动 = 任务停留在待梳理，由你点击卡片上的 ⚗ 分解。";
+            }
+          }
+          var grid = zone.querySelector(".grid.gap-3");
+          if (grid) grid.style.display = "none";
+          var kids = Array.prototype.slice.call(zone.children);
+          for (var j = 0; j < kids.length; j++) {
+            var cls = kids[j].className || "";
+            if (cls.indexOf("border-t") >= 0 || cls.indexOf("kb-orch-explain") >= 0) {
+              kids[j].style.display = "none";
+            }
           }
         }
       }
