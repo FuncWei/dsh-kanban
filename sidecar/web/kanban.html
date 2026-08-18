@@ -149,6 +149,56 @@
            fallback when SDK.components.Checkbox is missing. */
       };
 
+      /* --- toast feedback -------------------------------------------------
+         The board's toolbar buttons (nudge dispatcher / refresh / clear
+         filters) all succeed silently — no loading state, no confirmation,
+         so clicks feel dead. Inject a tiny toast overlay + click feedback
+         so every action visibly responds. */
+      var KB_TOAST_STYLE = document.createElement("style");
+      KB_TOAST_STYLE.textContent =
+        ".kb-toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);" +
+        "z-index:2147483000;background:rgba(24,26,32,.92);color:#f2f3f5;" +
+        "border:1px solid rgba(255,255,255,.14);border-radius:999px;" +
+        "padding:7px 16px;font-size:12.5px;box-shadow:0 6px 24px rgba(0,0,0,.35);" +
+        "pointer-events:none;opacity:0;transition:opacity .18s ease,transform .18s ease;" +
+        "transform:translateX(-50%) translateY(-4px);max-width:82vw;text-align:center;}" +
+        ".kb-toast.on{opacity:1;transform:translateX(-50%) translateY(0);}" +
+        ".kb-toast.err{background:rgba(180,42,42,.95);border-color:rgba(255,120,120,.4);}" +
+        ".hermes-kanban button:active{transform:scale(.96);}";
+      document.head.appendChild(KB_TOAST_STYLE);
+
+      var _kbToastTimer = null;
+      function kbToast(text, isErr) {
+        var el = document.querySelector(".kb-toast");
+        if (!el) {
+          el = document.createElement("div");
+          el.className = "kb-toast";
+          document.body.appendChild(el);
+        }
+        el.textContent = text;
+        el.classList.toggle("err", !!isErr);
+        el.classList.add("on");
+        if (_kbToastTimer) clearTimeout(_kbToastTimer);
+        _kbToastTimer = setTimeout(function () {
+          el.classList.remove("on");
+        }, 2200);
+      }
+
+      /* Click feedback for the toolbar buttons via capture-phase delegation —
+         the bundle renders them without any loading/confirmation UI. */
+      document.addEventListener("click", function (ev) {
+        var btn = ev.target && ev.target.closest ? ev.target.closest("button") : null;
+        if (!btn || !btn.closest(".hermes-kanban")) return;
+        var t = (btn.textContent || "").trim();
+        if (t === "催促派发器" || t === "Nudge dispatcher") {
+          kbToast("已催促派发器，正在检查就绪任务…");
+        } else if (t === "刷新" || t === "Refresh") {
+          kbToast("已刷新看板数据");
+        } else if (t === "清除筛选" || t === "Clear filters") {
+          kbToast("已清除筛选条件");
+        }
+      }, true);
+
       /* --- network -------------------------------------------------------- */
       /* Header keys are normalised to lowercase so a later
          ``headers["content-type"] = ...`` check can never miss a
