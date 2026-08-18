@@ -7,8 +7,16 @@
   <link rel="stylesheet" href="/kanban/vendor/hermes-base.css" />
   <link rel="stylesheet" href="/kanban/dist/style.css" />
   <style>
-    /* Host page scaffolding only; the board styles come from dist/style.css. */
-    html, body { margin: 0; padding: 0; height: 100%; }
+    /* Simplify the orchestration panel: the DSH board runs a single
+       default profile, so the per-profile pickers (orchestrator profile /
+       default assignee) and the profile-description editor are advanced
+       noise. Hide them; keep only the Auto/Manual mode switch plus the
+       one-line explainer injected by the script below. */
+    .hermes-kanban .grid.gap-3.sm\:grid-cols-3 > div:nth-child(1),
+    .hermes-kanban .grid.gap-3.sm\:grid-cols-3 > div:nth-child(2),
+    .hermes-kanban .border-t.pt-3 {
+      display: none !important;
+    }
     #root { height: 100%; }
   </style>
   <script>
@@ -511,19 +519,57 @@
         authedFetch: authedFetch,
         buildWsUrl: buildWsUrl
       };
+      /* Keep the orchestration panel minimal and self-explanatory: hide the
+         advanced per-profile editor and put a plain-language explainer
+         right under the header row. Idempotent — safe to run on every
+         sweep. */
+      function enhanceOrchestration(root) {
+        var zone = root.querySelector(".p-2.flex.flex-col.gap-3");
+        if (!zone) return;
+        var grid = zone.querySelector(".grid.gap-3");
+        if (grid && grid.children.length >= 3) {
+          grid.children[0].style.display = "none";
+          grid.children[1].style.display = "none";
+        }
+        var kids = Array.prototype.slice.call(zone.children);
+        for (var i = 0; i < kids.length; i++) {
+          var cls = kids[i].className || "";
+          if (cls.indexOf("border-t") >= 0) kids[i].style.display = "none";
+        }
+        if (!zone.querySelector(".kb-orch-explain")) {
+          var headerRow = zone.firstElementChild;
+          var p = document.createElement("p");
+          p.className = "kb-orch-explain text-xs text-muted-foreground mt-1";
+          p.textContent =
+            "编排开关：自动 = 新的「待梳理」任务由派发器自动分解并分派执行；" +
+            "手动 = 任务停留在待梳理，由你点击卡片上的 ⚗ 分解。";
+          if (headerRow) {
+            zone.insertBefore(p, headerRow.nextSibling);
+          } else {
+            zone.appendChild(p);
+          }
+        }
+      }
+
       window.__HERMES_PLUGINS__ = {
         register: function (name, Component) {
           var rootEl = document.getElementById("root");
           ReactDOM.createRoot(rootEl).render(h(Component));
           var mo = new MutationObserver(function () {
             zhReplace(rootEl);
+            enhanceOrchestration(rootEl);
           });
           mo.observe(rootEl, { childList: true, subtree: true });
           zhReplace(rootEl);
+          enhanceOrchestration(rootEl);
           /* Periodic sweep: React re-renders during interactions can race
              the MutationObserver batching window; a lightweight idempotent
-             sweep guarantees no English scaffold string survives. */
-          setInterval(function () { zhReplace(rootEl); }, 800);
+             sweep guarantees no English scaffold string survives and the
+             orchestration panel stays simplified. */
+          setInterval(function () {
+            zhReplace(rootEl);
+            enhanceOrchestration(rootEl);
+          }, 800);
         }
       };
     })();
