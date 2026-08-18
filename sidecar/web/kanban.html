@@ -146,9 +146,20 @@
       };
 
       /* --- network -------------------------------------------------------- */
+      /* Header keys are normalised to lowercase so a later
+         ``headers["content-type"] = ...`` check can never miss a
+         ``Content-Type`` already provided by the bundle — otherwise the
+         same header would be added twice and the browser would send
+         ``content-type: application/json, application/json``, which
+         FastAPI does not parse as JSON (body then arrives as a string). */
       function authHeaders(extra) {
-        var headers = Object.assign({}, extra);
-        if (TOKEN) headers["Authorization"] = "Bearer " + TOKEN;
+        var headers = {};
+        var src = extra || {};
+        for (var k in src) {
+          if (!Object.prototype.hasOwnProperty.call(src, k)) continue;
+          headers[k.toLowerCase()] = src[k];
+        }
+        if (TOKEN) headers["authorization"] = "Bearer " + TOKEN;
         return headers;
       }
       function fetchJSON(url, opts) {
@@ -401,9 +412,14 @@
         "no description": "无描述",
         "⚠ no description": "⚠ 无描述",
         "Save": "保存",
+        "Settings saved.": "设置已保存。",
+        "Description saved for ": "已保存描述：",
+        "Auto-generated description for ": "已自动生成描述：",
         "Orchestration: Auto — the dispatcher decomposes new triage tasks automatically every tick. Click to switch to Manual (pre-PR behavior).": "编排：自动 — 派发器每轮自动分解新的待梳理任务。点击切换为手动（PR 前行为）。",
         "Orchestration: Manual — triage tasks stay in triage until you click ⚗ Decompose on each card. Click to switch to Auto.": "编排：手动 — 任务保留在待梳理列，直到你点击卡片上的 ⚗ 分解。点击切换为自动。",
         "Auto": "自动",
+        "Manual": "手动",
+        "…": "…",
         "No worker log yet.": "暂无 worker 日志。",
         "Status": "状态",
         "Created by": "创建者",
@@ -439,6 +455,15 @@
         return false;
       }
 
+      /* Dynamic prefix/suffix patterns for strings that pair a translated
+         prefix with a runtime value (e.g. "Save failed: <detail>"). */
+      var ZH_PREFIX = [
+        ["Save failed: ", "保存失败："],
+        ["Auto-generate failed: ", "自动生成失败："],
+        ["Description saved for ", "已保存描述："],
+        ["Auto-generated description for ", "已自动生成描述："],
+      ];
+
       function zhReplace(root) {
         var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
         var n;
@@ -457,6 +482,13 @@
           }
           if (t.indexOf("Resolved: ") === 0) {
             n.nodeValue = "解析为：" + t.slice("Resolved: ".length);
+            continue;
+          }
+          for (var p = 0; p < ZH_PREFIX.length; p++) {
+            if (t.indexOf(ZH_PREFIX[p][0]) === 0) {
+              n.nodeValue = ZH_PREFIX[p][1] + t.slice(ZH_PREFIX[p][0].length);
+              break;
+            }
           }
         }
       }
@@ -488,6 +520,10 @@
           });
           mo.observe(rootEl, { childList: true, subtree: true });
           zhReplace(rootEl);
+          /* Periodic sweep: React re-renders during interactions can race
+             the MutationObserver batching window; a lightweight idempotent
+             sweep guarantees no English scaffold string survives. */
+          setInterval(function () { zhReplace(rootEl); }, 800);
         }
       };
     })();
